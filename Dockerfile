@@ -7,10 +7,10 @@ RUN apk add --no-cache musl-dev git pkgconfig openssl-dev
 # set the workdir
 WORKDIR /app
 # copy only the source files
-COPY Cargo.lock Cargo.toml /app/
+COPY Cargo.toml /app/
 COPY src /app/src
 # do a release build
-RUN cargo build --config net.git-fetch-with-cli=true  --release
+RUN cargo build --config net.git-fetch-with-cli=true --release
 RUN strip /app/target/release/rusty-ip
 
 # # use a plain alpine image, the alpine version needs to match the builder
