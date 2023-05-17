@@ -18,5 +18,7 @@ async fn main() {
         }
     });
 
+    println!("rusty-ip started on port {}", port);
+
     warp::serve(ip).run(([127, 0, 0, 1], port)).await;
 }
