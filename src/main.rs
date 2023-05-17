@@ -10,9 +10,12 @@ async fn main() {
         .expect("Invalid PORT value");
 
     // GET / => 200 OK with body "127.0.0.1"
-    let ip = warp::addr::remote().map(|addr: Option<SocketAddr>| {
-        if let Some(socket_addr) = addr {
-            format!("{:?}", socket_addr.ip())
+    let ip = warp::header::optional::<String>("x-forwarded-for").map(|header: Option<String>| {
+        if let Some(x_forwarded_for) = header {
+            // Split the header value by commas and take the first IP address
+            let ip_addresses: Vec<&str> = x_forwarded_for.split(',').collect();
+            let ip = ip_addresses[0].trim();
+            ip.to_string()
         } else {
             "Unknown IP address".to_string()
         }
