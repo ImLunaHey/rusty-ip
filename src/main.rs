@@ -1,9 +1,20 @@
 use axiom_rs::Client;
 use psutil::process::Process;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::{env, time::Duration};
 use tokio::time;
 use warp::Filter;
+
+async fn log(json: &Value) {
+    // Check if TOKEN environment variable exists
+    if let Ok(_token) = env::var("AXIOM_TOKEN") {
+        // Axiom client
+        let client = Client::new().expect("Failed to get axiom client");
+        let _ = client.ingest("logs", vec![json]).await;
+    } else {
+        println!("{}", serde_json::to_string(&json).unwrap());
+    }
+}
 
 async fn log_stats() {
     // Get memory stats
@@ -57,7 +68,11 @@ async fn main() {
         }
     });
 
-    println!("rusty-ip started on port {}", port);
+    log(&json!({
+        "service": "rusty-ip",
+        "port": port,
+    }))
+    .await;
 
     warp::serve(ip).run(([0, 0, 0, 0], port)).await;
 }
