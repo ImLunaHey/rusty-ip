@@ -47,6 +47,12 @@ async fn main() {
         .parse::<u16>()
         .expect("Invalid PORT value");
 
+    // Replicate ID
+    let replica_id = env::var("RAILWAY_REPLICA_ID")
+        .unwrap_or_else(|_| "-1".to_string())
+        .parse::<u16>()
+        .unwrap();
+
     // Every 30s log stats
     let mut interval = time::interval(Duration::from_secs(30));
     tokio::spawn(async move {
@@ -57,18 +63,20 @@ async fn main() {
     });
 
     // GET / => 200 OK with body "127.0.0.1"
-    let ip = warp::header::optional::<String>("x-forwarded-for").map(|header: Option<String>| {
-        if let Some(x_forwarded_for) = header {
-            // Split the header value by commas and take the first IP address
-            let ip_addresses: Vec<&str> = x_forwarded_for.split(',').collect();
-            let ip = ip_addresses[0].trim();
-            ip.to_string()
-        } else {
-            "Unknown IP address".to_string()
-        }
-    });
+    let ip =
+        warp::header::optional::<String>("x-forwarded-for").map(move |header: Option<String>| {
+            if let Some(x_forwarded_for) = header {
+                // Split the header value by commas and take the first IP address
+                let ip_addresses: Vec<&str> = x_forwarded_for.split(',').collect();
+                let ip = ip_addresses[0].trim();
+                format!("Replica ID: {} IP: {}", replica_id, ip.to_string())
+            } else {
+                "Unknown IP address".to_string()
+            }
+        });
 
     log(&json!({
+        "id": replica_id,
         "service": "rusty-ip",
         "port": port,
     }))
