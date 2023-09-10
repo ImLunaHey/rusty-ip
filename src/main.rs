@@ -49,7 +49,7 @@ async fn main() {
 
     // Replicate ID
     let replica_id = env::var("RAILWAY_REPLICA_ID")
-        .unwrap_or_else(|_| -1)
+        .unwrap_or_else(|_| "1".to_string())
         .parse::<u16>()
         .unwrap();
 
