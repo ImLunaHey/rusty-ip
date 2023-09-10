@@ -50,7 +50,8 @@ async fn main() {
     // Replicate ID
     let replica_id = env::var("RAILWAY_REPLICA_ID")
         .unwrap_or_else(|_| "-1".to_string())
-        .unwrap();
+        .parse::<u16>()
+        .unwrap_or_else(|_| 0);
 
     // Every 30s log stats
     let mut interval = time::interval(Duration::from_secs(30));
