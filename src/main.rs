@@ -49,8 +49,7 @@ async fn main() {
 
     // Replicate ID
     let replica_id = env::var("RAILWAY_REPLICA_ID")
-        .unwrap_or_else(|_| "1".to_string())
-        .parse::<u16>()
+        .unwrap_or_else(|_| "-1".to_string())
         .unwrap();
 
     // Every 30s log stats
@@ -62,7 +61,7 @@ async fn main() {
         }
     });
 
-    // GET / => 200 OK with body "127.0.0.1"
+    // GET / => 200 OK with body
     let ip =
         warp::header::optional::<String>("x-forwarded-for").map(move |header: Option<String>| {
             if let Some(x_forwarded_for) = header {
