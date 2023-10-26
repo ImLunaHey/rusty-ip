@@ -1,7 +1,7 @@
 use axiom_rs::Client;
 use psutil::process::Process;
 use serde_json::{json, Value};
-use std::{env, time::Duration};
+use std::{env, net::SocketAddr, time::Duration};
 use tokio::time;
 use warp::Filter;
 
@@ -63,16 +63,32 @@ async fn main() {
     });
 
     // GET / => 200 OK with body
-    let ip =
-        warp::header::optional::<String>("x-forwarded-for").map(move |header: Option<String>| {
-            if let Some(x_forwarded_for) = header {
-                // Split the header value by commas and take the first IP address
+    let ip = warp::path::end()
+        .and(warp::header::optional::<String>("x-forwarded-for"))
+        .and(warp::addr::remote())
+        .map(|header: Option<String>, addr: Option<SocketAddr>| {
+            let ip = if let Some(x_forwarded_for) = header {
                 let ip_addresses: Vec<&str> = x_forwarded_for.split(',').collect();
-                let ip = ip_addresses[0].trim();
-                format!("Replica ID: {} IP: {}", replica_id, ip.to_string())
+                ip_addresses[0].trim().to_string()
             } else {
-                "Unknown IP address".to_string()
-            }
+                match addr {
+                    Some(socket_addr) => format!("{:?}", socket_addr.ip()).to_string(),
+                    None => "Unknown".to_string(),
+                }
+            };
+            warp::reply::json(&json!({
+                "ip": ip
+            }))
+        });
+
+    // GET /.well-known/health => 200 OK with body
+    let health = warp::path(".well-known")
+        .and(warp::path("health"))
+        .and(warp::path::end())
+        .map(|| {
+            warp::reply::json(&json!({
+                "status": "pass"
+            }))
         });
 
     log(&json!({
@@ -82,5 +98,8 @@ async fn main() {
     }))
     .await;
 
-    warp::serve(ip).run(([0, 0, 0, 0], port)).await;
+    let routes = warp::get().and(ip.or(health));
+
+    // start the server
+    warp::serve(routes).run(([0, 0, 0, 0], port)).await;
 }
